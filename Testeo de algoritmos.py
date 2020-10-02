@@ -51,7 +51,7 @@ p = [[-1 for y in range(m)] for x in range(n)] #p
 p[start[0]][start[1]] = -2
 q = deque([start])
 found = False
-####### valida algoritmo de BFS y BackT
+####### valida algoritmo de BFS y Backtracking
 def valid(r, c):
 	return (r >= 0) and (r<n) and (c >= 0) and (c < m) \
 		and (mat[r][c] != '=') and (p[r][c] == -1)
