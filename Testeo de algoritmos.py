@@ -92,7 +92,7 @@ while len(q):
 			p[nr2][nc2] = i
 			q.append((nr2, nc2))
 
-####### recursos Algoritmo 2(sebas)
+####### recursos Algoritmo GBFS
 frontier = PriorityQueue()
 frontier.put((0, start))
 came_from = []
