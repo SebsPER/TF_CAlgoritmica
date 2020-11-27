@@ -128,20 +128,21 @@ def main():
     surface = surface.convert()
     drawGrid(surface)
 
-    #walls = [wall(), wall(), wall(), wall(), wall(), wall(), wall(), wall(), wall()]
     walls = []
-    posW = []
+    #posW = []
+    posWV = []
+    posWH = []
     player1 = player() 
-    ops = [opponent([(screen_width/2)-(gridsize/2), (0)], ((0), (8)), ((16), (8)), 1, (245, 245, 220, 255), 0), \
-           opponent([(0), (screen_height/2)-(gridsize/2)], ((8), (0)), ((8), (16)), 1, (127, 255, 212, 255), 1), \
-           opponent([16*gridsize, (screen_height/2)-(gridsize/2)], ((8), (16)), ((8), (0)), 1, (255, 100, 100), 1)]
+    ops = [opponent([(screen_width/2)-(gridsize/2), (0)], (0, 8), (16, 8), 1, (245, 245, 220, 255), 0), \
+           opponent([(0), (screen_height/2)-(gridsize/2)], (8, 0), (8, 16), 1, (127, 255, 212, 255), 1), \
+           opponent([16*gridsize, (screen_height/2)-(gridsize/2)], (8, 16), (8, 0), 1, (255, 100, 100), 1)]
     ops[0].mapping(walls)
     ops[0].path(ops[0].getPos())
     ops[0].cambiarMoves()
     ops[1].mapping(walls)
     ops[1].path2((ops[1].getStart()))
     ops[2].mapping(walls)
-    ops[2].path3(ops[2].getMap(), ops[2].getEnd(), 8, 16)
+    ops[2].path3(ops[2].getMap(), 8, 16)
     turn1= True
     myfont = pygame.font.SysFont("monospace",16)
     id = [[1,2],[0,2],[0,1]]
@@ -160,38 +161,34 @@ def main():
                 for j in range(2):
                     if op.paredesL():
                         if op.getMovesL() > ops[id[cnt][j]].getMovesL() and (not op.gReach()):
+                            path = ops[id[cnt][j]].getPath()
                             if ops[id[cnt][j]].getType() == 1:
-                                path = ops[id[cnt][j]].getPath()
-                                current, max = ops[id[cnt][j]].getMoveCount()
+                                current, max = ops[id[cnt][j]].getMoveData()
                                 for i in range(current, max-1):
-                                    overlap = True
                                     x = path[i + 1][1]
                                     y = path[i + 1][0]
                                     x -= 1
-                                    if ([x,y] not in posW) and ([x,y+1] not in posW):# and ([x,y+2] not in posW):
-                                        overlap = False
-                                    if x > 0 and y > 0 and y < 16 or x < 18 and (not overlap):
+                                    if ([x,y+2] in posWV) and ([x,y] in posWV):
+                                        continue
+                                    elif x > 0 and y > 0 and y < 15 or x < 18 and ([x,y] not in posWV):
                                         walls.append(wall(x, y, 'vert'))
                                         pared = True
-                                        posW.append([x,y])
+                                        posWV.append([x,y])
                                         op.subPared()
                                         op.setuPared(True)
                                         break
-                            if ops[id[cnt][j]].getType() == 0:
-                                path = ops[id[cnt][j]].getPath()
-                                current, max = ops[id[cnt][j]].getMoveCount()
+                            elif ops[id[cnt][j]].getType() == 0:
+                                current, max = ops[id[cnt][j]].getMoveData()
                                 for i in range(current, max-1):
-                                    overlap = True
                                     x = path[i + 1][1]
                                     y = path[i + 1][0]
                                     y -= 1
-                                    #x -= 2
-                                    if ([x,y] not in posW) and ([x+1,y] not in posW):# and ([x+2,y] not in posW):
-                                        overlap = False
-                                    if x > 0 and y > 0 and y < 16 and x < 18 and (not overlap):
+                                    if ([x+2,y] in posWH) and ([x,y] in posWH):
+                                        continue
+                                    elif x > 0 and y > 0 and y < 18 and x < 15 and ([x,y] not in posWH):
                                         walls.append(wall(x, y, 'horiz'))
                                         pared = True
-                                        posW.append([x,y])
+                                        posWH.append([x,y])
                                         op.subPared()
                                         op.setuPared(True)
                                         break
@@ -199,20 +196,18 @@ def main():
                     break
                 cnt += 1
             if pared: # recalculando paths si es que se coloco una pared nueva
-                #walls.append(wall())
+                
                 ops[0].mapping(walls)
                 ops[0].path(ops[0].getPos())
                 ops[0].cambiarMoves()
 
                 ops[1].mapping(walls)
-                coord,_ = ops[1].getMoveCount()
-                camino2 = ops[1].getPath()
-                if len(camino2) > 1 and len(camino2) != coord: 
-                    nuevoInit = camino2[coord]
-                    ops[1].path2((nuevoInit))
+                ops[1].path2((ops[1].getCurrMove(0)))
 
                 ops[2].mapping(walls)
-                ops[2].path3(ops[2].getMap(), ops[2].getEnd(), 8, 16)
+                nx, ny = ops[2].getCurrMove(1)[0], ops[2].getCurrMove(1)[1]
+                ops[2].reboot(nx, ny)
+                ops[2].path3(ops[2].getMap(), nx, ny)
 
             ops[0].move2()
             if ops[0].position[0] == player1.position[0] and ops[0].position[1] == player1.position[1]:
@@ -243,9 +238,7 @@ def main():
             op.draw(surface)
             op.checkGoal()
             op.setuPared(False)
-        #ops[0].draw(surface)
-        #ops[1].draw(surface)
-        #ops[2].draw(surface)
+
         for i in range(len(walls)):
             walls[i].draw(surface)
         player1.turn((0, 0))

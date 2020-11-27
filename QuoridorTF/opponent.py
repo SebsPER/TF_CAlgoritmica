@@ -60,7 +60,7 @@ class opponent():
          #start, end = (-1, -1), (-1, -1)
          self.mat = [['.' for y in range(m)] for x in range(n)]
          for i in range(n):
-             for j in range(m):
+             for j in range(m-1):
                 for w in range(len(walls)):
                     if i*(gridsize) == walls[w].position[1] and j*(gridsize) == walls[w].position[0]:
                         self.mat[i][j] = '='
@@ -78,8 +78,10 @@ class opponent():
           return self.mat
       def getEnd(self):
           return self.end
-      def getMoveCount(self):
+      def getMoveData(self):
           return self.moveCount, len(self.moves)
+      def getMoveCount(self):
+          return self.moveCount
       def getType(self):
           return self.type
       def getPath(self):
@@ -97,10 +99,12 @@ class opponent():
       def setuPared(self, condicion):
           self.usePared = condicion
       def checkGoal(self):
-          if self.position[0]/gridsize == self.end[1] and self.position[1]/gridsize == self.end[1]:
+          if self.position[0]/gridsize == self.end[1] and self.position[1]/gridsize == self.end[0]:
               self.goalReach = True
       def gReach(self):
           return self.goalReach
+      def getCurrMove(self, i):
+          return self.moves[self.moveCount-i]
 ########################### algoritmo 1
       def move(self):
           if self.moveCount < len(self.moves):
@@ -119,7 +123,6 @@ class opponent():
       def cambiarMoves(self):
           moves2 = []
           self.moveCount = 1
-          #self.position = [self.position[0]*gridsize, self.position[1]*gridsize]
           moves2.append([int(self.position[0]/gridsize), int(self.position[1]/gridsize)])
           for i in range(len(self.moves)):
               step = self.moves[i]
@@ -136,7 +139,7 @@ class opponent():
           self.moves = moves2
 
       def path(self, init):
-         self.v = [[-1 for y in range(m)] for x in range(n)] #p
+         self.v = [[-1 for y in range(m)] for x in range(n)]
          self.v[self.start[0]][self.start[1]] = -2
          initR = [int(init[1]/gridsize), int(init[0]/gridsize)]
          init2 = [int(init[0]/gridsize), int(init[1]/gridsize)]
@@ -146,7 +149,6 @@ class opponent():
          self.moveCount = 1
 
          def reconstruct_path():
-            #print("YES")
             r, c  = self.end
             path = deque()
             while self.v[r][c] >= 0:
@@ -154,9 +156,7 @@ class opponent():
                 path.appendleft(dd[i])
                 r -= dx[i]*2
                 c -= dy[i]*2
-            #print(len(path))
             self.moves = path
-            #return ''.join(path)
 
          def valid(r, c):
             return (r >= 0) and (r<n) and (c >= 0) and (c < m) \
@@ -166,7 +166,6 @@ class opponent():
             r, c = self.deq.popleft()
             if (r, c) == self.end:
                 return reconstruct_path()
-                #exit()
             for i in range(4):
                 nr, nc = r + dx[i], c + dy[i]
                 nr2, nc2 = r + dx[i]*2, c + dy[i]*2
@@ -177,11 +176,16 @@ class opponent():
 
 ############################ algoritmo 2
       def move2(self):
-        if not self.usePared:
+        if (not self.usePared) and (not self.goalReach):
             if self.moveCount <= len(self.moves)-1:
               self.position = [self.moves[self.moveCount][1]*gridsize, self.moves[self.moveCount][0]*gridsize]
               self.movesLeft = len(self.moves) - self.moveCount
-            if self.moveCount <= len(self.moves)-1: self.moveCount +=1
+            if self.moveCount <= len(self.moves)-1: 
+              self.moveCount +=1
+            #else: 
+                #self.moves = [[], moves[-1]]
+                #self.moveCount = 0
+
 
       def path2(self, init):
         def valid2(r, c):
@@ -192,11 +196,11 @@ class opponent():
             # distancia
             return abs(self.end[0]-nr) + abs(self.end[1]-nc)
 
-        self.moves = [] ###nuevo
+        self.moves = []
         self.frontier = PriorityQueue()
         self.frontier.put((0, init))
         self.came_from = [init]
-        self.moveCount = 0
+        self.moveCount = 1
         self.counter = 0
         while not self.frontier.empty():
             current = self.frontier.get()
@@ -211,43 +215,47 @@ class opponent():
                   priority = heuristic(self.end, nr2, nc2)
                   self.frontier.put((priority - self.counter, (nr2, nc2)))
                   self.came_from.append((nr2, nc2))
-            self.counter += 1
+            self.counter += 2
 
 ####################### algoritmo 3
-      def path3(self, maze, end, row, col):
+      def reboot(self, x, y):
+          self.v = [[-1 for y in range(m)] for x in range(n)] #p
+          self.v[x][y] = -2
+          self.moveCount = 1
+          self.moves = []
+
+      def path3(self, maze, row, col):
           def valid(r, c):
             return (r >= 0) and (r<n) and (c >= 0) and (c < m) \
                 and (self.mat[r][c] != '=') and (self.v[r][c] == -1)
 
           nrows = len(maze)
           ncols = len(maze[0])
-          if self.end[0] == row and self.end[1] == col:#endrow == row and endcol == col:
+
+          if self.end[0] == row and self.end[1] == col:
               self.moves.append([row, col])
               for i in range(m):
                   for j in range(n):
                       self.v[i][j] = 1
-              #p = [[1 for y in range(m)] for x in range(n)]
-              print(self.moves)
-              #self.moves = way
-              found = True
+              #print(self.moves)
               return 
           else:
               if valid(row - 1, col):
                   self.v[row-1][col] = 1
                   self.moves.append([row, col])
-                  self.path3(maze, self.end, row - 2, col)
+                  self.path3(maze, row - 2, col)
               if valid(row, col - 1):
                   self.v[row][col-1] = 1
                   self.moves.append([row, col])
-                  self.path3(maze, self.end, row, col - 2)
+                  self.path3(maze, row, col - 2)
               if valid(row + 1, col):
                   self.v[row+1][col] = 1
                   self.moves.append([row, col])
-                  self.path3(maze, self.end, row + 2, col)
+                  self.path3(maze, row + 2, col)
               if valid(row, col + 1):
                   self.v[row][col+1] = 1
                   self.moves.append([row, col])
-                  self.path3(maze, self.end, row, col + 2)
+                  self.path3(maze, row, col + 2)
           return False
 
 
